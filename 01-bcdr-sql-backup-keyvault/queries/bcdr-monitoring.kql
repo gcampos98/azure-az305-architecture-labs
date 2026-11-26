@@ -1,20 +1,19 @@
-// 1. Disponibilidad y errores de conexión de Azure SQL Database durante el failover
+// 1. Métricas de disponibilidad, conexiones y bloqueos en Azure SQL Database
 AzureMetrics
 | where ResourceProvider == "MICROSOFT.SQL"
-| where Resource == "DB-VENTAS-CRITICA"
 | where MetricName in ("availability", "connection_failed", "blocked_by_firewall", "deadlock")
 | summarize Promedio = avg(Average), Total = sum(Total) by MetricName, bin(TimeGenerated, 1h)
 | order by TimeGenerated desc
 
-// 2. Auditoría de trabajos de Azure Backup en Recovery Services Vault
+// 2. Trabajos de Azure Backup en Recovery Services Vault (usa JobDurationInSecs)
 AddonAzureBackupJobs
 | where TimeGenerated > ago(24h)
-| project TimeGenerated, BackupItemUniqueId, JobOperation, JobStatus, DurationInSecs
+| project TimeGenerated, BackupItemUniqueId, JobOperation, JobStatus, JobDurationInSecs
 | order by TimeGenerated desc
 
-// 3. Registro de operaciones de Failover y Key Vault en Azure Activity Log
-AzureActivity
+// 3. Logs de diagnóstico y auditoría (Key Vault, SQL y Storage) en Log Analytics
+AzureDiagnostics
 | where TimeGenerated > ago(24h)
-| where OperationNameValue has_any ("failoverGroups", "Microsoft.KeyVault/vaults/secrets")
-| project TimeGenerated, Caller, OperationNameValue, ActivityStatusValue, ResourceGroup
+| where ResourceProvider in ("MICROSOFT.KEYVAULT", "MICROSOFT.SQL", "MICROSOFT.STORAGE")
+| project TimeGenerated, ResourceProvider, Resource, OperationName, ResultType
 | order by TimeGenerated desc
