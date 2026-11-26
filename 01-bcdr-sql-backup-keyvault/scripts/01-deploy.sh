@@ -150,5 +150,3 @@ EOF
 
 echo "=== DESPLIEGUE COMPLETADO (SUFFIX=$SUFFIX) ==="
 ```[cite: 1, 2]
-
-¿Quieres que te pase ahora el bloque completo para copiar y pegar en `scripts/02-test-workloads.sh` o `scripts/03-cleanup.sh`?
