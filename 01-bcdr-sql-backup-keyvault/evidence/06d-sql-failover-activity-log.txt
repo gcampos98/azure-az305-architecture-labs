@@ -1,0 +1,7 @@
+Hora  |  Operacion  |  Estado  |  FailoverGroup
+2026-11-26T21:41:10.030588Z  |  Microsoft.Sql/servers/failoverGroups/failover/action  |  Succeeded  |  fog-az305-5305
+2026-11-26T21:40:59.6131575Z  |  Microsoft.Sql/servers/failoverGroups/failover/action  |  Accepted  |  fog-az305-5305
+2026-11-26T21:40:59.5350336Z  |  Microsoft.Sql/servers/failoverGroups/failover/action  |  Started  |  fog-az305-5305
+2026-11-26T21:12:44.3721791Z  |  Microsoft.Sql/servers/failoverGroups/failover/action  |  Succeeded  |  fog-az305-5305
+2026-11-26T21:12:33.1530037Z  |  Microsoft.Sql/servers/failoverGroups/failover/action  |  Accepted  |  fog-az305-5305
+2026-11-26T21:12:32.9811236Z  |  Microsoft.Sql/servers/failoverGroups/failover/action  |  Started  |  fog-az305-5305

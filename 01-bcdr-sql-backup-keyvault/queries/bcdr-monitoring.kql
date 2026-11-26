@@ -17,3 +17,10 @@ AzureDiagnostics
 | where ResourceProvider in ("MICROSOFT.KEYVAULT", "MICROSOFT.SQL", "MICROSOFT.STORAGE")
 | project TimeGenerated, ResourceProvider, Resource, OperationName, ResultType
 | order by TimeGenerated desc
+
+// 4. Operaciones de administración y failover de SQL Failover Groups (Activity Log)
+AzureActivity
+| where TimeGenerated > ago(24h)
+| where _ResourceId contains "failoverGroups" or OperationNameValue contains "FAILOVERGROUPS"
+| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, _ResourceId
+| order by TimeGenerated desc
