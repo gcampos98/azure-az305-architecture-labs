@@ -1,4 +1,4 @@
-RTO_Failover_Segundos: 14
+RTO_Failover_Segundos: 2
 Grupo           RolEnSecundaria    EstadoReplicacion    Politica
 --------------  -----------------  -------------------  ----------
 fog-az305-5305  Primary            CATCH_UP             Manual

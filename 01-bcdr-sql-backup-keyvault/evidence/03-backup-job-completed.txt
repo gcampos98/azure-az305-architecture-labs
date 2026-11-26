@@ -1,3 +1,3 @@
-Operacion    Estado      RecursoProtegido    InicioUTC
------------  ----------  ------------------  --------------------------------
-Backup       InProgress  vm-az305-web01      2026-11-26T14:57:28.269293+00:00
+JobId                                 Operacion    Estado      Inicio
+------------------------------------  -----------  ----------  ----------------------------
+6f169a06-eb3d-4aee-acb4-634b5ecdd503  Backup       InProgress  2026-11-26T21:41:14.8018457Z
