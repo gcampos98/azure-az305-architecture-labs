@@ -10,6 +10,7 @@ En `centralus`, el almacenamiento con **GZRS** (`Standard_GZRS`) mantiene **3 co
 ```mermaid
 flowchart LR
     subgraph PRI["Región Primaria: centralus"]
+        APP["Carga / Datos no estructurados (Blobs)"]
         VM["VM ARM64 (sin IP pública / sin SSH abierto)"]
         RSV["Recovery Services Vault"]
         SQL1["Azure SQL Server (Primario)"]
@@ -28,11 +29,15 @@ flowchart LR
         KV2["Key Vault destino (misma geografía)"]
     end
 
+    APP --> STG1
     VM --> RSV
     RSV -. "Réplica / DR" .-> BK_PAIR
     SQL1 <-->|"Auto-Failover Group"| SQL2
     STG1 -->|"Réplica asíncrona GZRS"| STG2
     KV1 -. "Backup/Restore (misma suscripción y geografía)" .-> KV2
+    APP --> SQL1
+    APP --> KV1
+    STG1 --> LAW
     VM --> LAW
     SQL1 --> LAW
     KV1 --> LAW
