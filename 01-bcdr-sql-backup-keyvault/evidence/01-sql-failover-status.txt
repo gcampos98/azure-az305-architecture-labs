@@ -1,0 +1,3 @@
+Grupo           RolEnWestUS3    EstadoReplicacion    Politica    GracePeriodMin
+--------------  --------------  -------------------  ----------  ----------------
+fog-az305-8633  Primary         CATCH_UP             Automatic   60

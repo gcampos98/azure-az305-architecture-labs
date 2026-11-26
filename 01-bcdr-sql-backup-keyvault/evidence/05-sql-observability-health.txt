@@ -1,0 +1,7 @@
+Signal                                       Result                 Meaning
+-------------------------------------------  ---------------------  -----------------------------------------------------
+Failed connections (connection_failed)       No datapoints returned No failed-connection samples emitted in 24h window
+User connection errors (user_error)          No datapoints returned No user-side connection errors observed
+Blocked by firewall (blocked_by_firewall)    0 throughout           No firewall blocks recorded
+Deadlocks (deadlock)                         0 throughout           No deadlocks recorded
+Availability (availability)                  100% throughout        Database stayed available across failover window
