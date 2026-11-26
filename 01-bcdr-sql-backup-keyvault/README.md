@@ -38,3 +38,13 @@ flowchart TB
         STG_P -.->|Replicación Geo-Asíncrona| STG_S
         KV_P -.->|Backup cifrado & Restore<br/>Misma Suscripción / Geografía| KV_S
     end
+
+---
+## 3. Decisiones de Arquitectura (ADR — Criterios Examen AZ-305)
+
+| Componente | Tecnología Seleccionada | Alternativa Descartada | Justificación Técnica (AZ-305) |
+| :--- | :--- | :--- | :--- |
+| **Base de Datos Relacional PaaS** | **Azure SQL Auto-Failover Group** | Active Geo-Replication / Zone Redundancy | *Active Geo-Replication* solo proporciona réplicas de lectura y exige conmutación manual; *Zone Redundancy* solo protege dentro de una misma región. **Auto-Failover Groups** mantiene capacidad de **lectura y escritura** tras un fallo regional sin cambiar cadenas de conexión mediante un endpoint único (`*.database.windows.net`). |
+| **Almacenamiento de Objetos** | **Standard GZRS** | LRS / ZRS / GRS | Combina la alta disponibilidad síncrona entre 3 Zonas de Disponibilidad en la región primaria (**ZRS**) con replicación asíncrona hacia una región secundaria con 3 copias adicionales (**LRS**), totalizando **6 copias**. |
+| **Protección de Cargas IaaS** | **Azure Backup (Recovery Services Vault)** | Snapshots manuales no gestionados | Automatiza políticas de retención a corto y largo plazo (LTR) y aislamiento mediante *Soft Delete* contra eliminación accidental o ransomware. |
+| **Gestión de Secretos DR** | **Key Vault Backup & Restore** | Replicación manual en texto plano | Los respaldos de Key Vault se exportan como blobs cifrados que solo pueden restaurarse dentro de la **misma suscripción y misma geografía de Azure** (`centralus` → `westus3`). |
