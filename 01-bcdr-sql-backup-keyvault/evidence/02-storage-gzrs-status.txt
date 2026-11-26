@@ -1,3 +1,3 @@
 Cuenta            SKU            RegionPrimaria    EstadoPri    RegionSecundaria    EstadoSec
 ----------------  -------------  ----------------  -----------  ------------------  -----------
-stgaz305gzrs8633  Standard_GZRS  centralus         available    eastus2             available
+stgaz305gzrs5305  Standard_GZRS  centralus         available    eastus2             available

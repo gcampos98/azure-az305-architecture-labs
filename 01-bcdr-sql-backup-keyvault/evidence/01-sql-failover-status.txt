@@ -1,3 +1,4 @@
-Grupo           RolEnWestUS3    EstadoReplicacion    Politica    GracePeriodMin
---------------  --------------  -------------------  ----------  ----------------
-fog-az305-8633  Primary         CATCH_UP             Automatic   60
+RTO_Failover_Segundos: 14
+Grupo           RolEnSecundaria    EstadoReplicacion    Politica
+--------------  -----------------  -------------------  ----------
+fog-az305-5305  Primary            CATCH_UP             Manual

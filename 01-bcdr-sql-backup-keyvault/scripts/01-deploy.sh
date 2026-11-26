@@ -149,4 +149,3 @@ export LAW_NAME="$LAW_NAME"
 EOF
 
 echo "=== DESPLIEGUE COMPLETADO (SUFFIX=$SUFFIX) ==="
-```[cite: 1, 2]
