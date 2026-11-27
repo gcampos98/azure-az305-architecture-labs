@@ -1,0 +1,22 @@
+// Ejecuta cada consulta por separado en el workspace law-az305-1c-<sufijo>.
+// Los registros tardan varios minutos en aparecer. El vault de la prueba negativa no envía registros.
+
+// 1. Respaldos y restauraciones
+AZKVAuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName in ("SecretBackup", "SecretRestore", "KeyBackup", "KeyRestore")
+| project TimeGenerated, OperationName, HttpStatusCode, ResultSignature, _ResourceId
+| order by TimeGenerated desc
+
+// 2. Operaciones rechazadas
+AZKVAuditLogs
+| where TimeGenerated > ago(24h)
+| where HttpStatusCode >= 400
+| summarize Total = count() by OperationName, HttpStatusCode, _ResourceId
+| order by Total desc
+
+// 3. Lecturas de secretos y uso de claves
+AZKVAuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName in ("SecretGet", "KeyEncrypt", "KeyDecrypt")
+| summarize Total = count() by OperationName, _ResourceId

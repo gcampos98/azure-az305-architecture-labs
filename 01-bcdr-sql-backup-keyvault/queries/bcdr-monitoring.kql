@@ -1,26 +1,44 @@
-// 1. Métricas de disponibilidad, conexiones y bloqueos en Azure SQL Database
+// Ejecuta cada consulta por separado en Log Analytics (selecciona el bloque y presiona Ejecutar).
+// Los datos aparecen solo desde que existen los diagnostic settings y puede haber unos minutos de demora.
+
+// 1. Métricas de Azure SQL por servidor (grupo de recursos) cada 5 minutos
 AzureMetrics
+| where TimeGenerated > ago(24h)
 | where ResourceProvider == "MICROSOFT.SQL"
-| where MetricName in ("availability", "connection_failed", "blocked_by_firewall", "deadlock")
-| summarize Promedio = avg(Average), Total = sum(Total) by MetricName, bin(TimeGenerated, 1h)
+| where MetricName in ("availability", "connection_successful", "connection_failed", "blocked_by_firewall", "deadlock")
+| summarize Promedio = avg(Average), Total = sum(Total) by MetricName, ResourceGroup, bin(TimeGenerated, 5m)
 | order by TimeGenerated desc
 
-// 2. Trabajos de Azure Backup en Recovery Services Vault (usa JobDurationInSecs)
+// 2. Trabajos de Azure Backup (tabla resource-specific)
 AddonAzureBackupJobs
 | where TimeGenerated > ago(24h)
-| project TimeGenerated, BackupItemUniqueId, JobOperation, JobStatus, JobDurationInSecs
+| summarize arg_max(TimeGenerated, JobOperation, JobStatus, JobDurationInSecs) by JobUniqueId
 | order by TimeGenerated desc
 
-// 3. Logs de diagnóstico y auditoría (Key Vault, SQL y Storage) en Log Analytics
+// 3. Auditoría de secretos en Key Vault (tabla resource-specific)
+AZKVAuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName startswith "Secret"
+| project TimeGenerated, OperationName, HttpStatusCode, _ResourceId
+| order by TimeGenerated desc
+
+// 4. Errores, timeouts y deadlocks de Azure SQL
 AzureDiagnostics
 | where TimeGenerated > ago(24h)
-| where ResourceProvider in ("MICROSOFT.KEYVAULT", "MICROSOFT.SQL", "MICROSOFT.STORAGE")
-| project TimeGenerated, ResourceProvider, Resource, OperationName, ResultType
+| where ResourceProvider == "MICROSOFT.SQL"
+| where Category in ("Errors", "Timeouts", "Deadlocks")
+| project TimeGenerated, Category, Resource, ResourceGroup
 | order by TimeGenerated desc
 
-// 4. Operaciones de administración y failover de SQL Failover Groups (Activity Log)
+// 5. Operaciones sobre Blob Storage (vacío mientras no haya actividad en blobs)
+StorageBlobLogs
+| where TimeGenerated > ago(24h)
+| project TimeGenerated, AccountName, OperationName, StatusCode
+| order by TimeGenerated desc
+
+// 6. Failover de SQL (Activity Log). No se proyecta "Caller" para no exponer tu identidad
 AzureActivity
 | where TimeGenerated > ago(24h)
-| where _ResourceId contains "failoverGroups" or OperationNameValue contains "FAILOVERGROUPS"
-| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, _ResourceId
+| where OperationNameValue contains "failoverGroups"
+| project TimeGenerated, OperationNameValue, ActivityStatusValue, ResourceGroup
 | order by TimeGenerated desc

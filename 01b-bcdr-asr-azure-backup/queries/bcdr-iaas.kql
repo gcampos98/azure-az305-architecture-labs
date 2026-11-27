@@ -1,0 +1,26 @@
+// Ejecuta cada consulta por separado en el workspace law-az305-1b-<sufijo>.
+// Los datos aparecen solo desde que existen los diagnostic settings, con demora de varios minutos.
+
+// 1. Trabajos de Site Recovery (replicación, Test Failover y limpieza)
+ASRJobs
+| where TimeGenerated > ago(24h)
+| project TimeGenerated, OperationName, Status, ReplicatedItemFriendlyName, DurationMs, ResultDescription
+| order by TimeGenerated desc
+
+// 2. Estado de los elementos replicados (la tabla se actualiza con poca frecuencia)
+ASRReplicatedItems
+| summarize arg_max(TimeGenerated, *) by ReplicatedItemUniqueId
+| project TimeGenerated, ReplicatedItemFriendlyName, ReplicationStatus, FailoverReadiness,
+          LastRpoCalculatedTime, LastSuccessfulTestFailoverTime
+
+// 3. Trabajos de Azure Backup (respaldo y restauración)
+AddonAzureBackupJobs
+| where TimeGenerated > ago(24h)
+| summarize arg_max(TimeGenerated, JobOperation, JobStatus, JobDurationInSecs) by JobUniqueId
+| order by TimeGenerated desc
+
+// 4. Cambios en las directivas de respaldo
+AddonAzureBackupPolicy
+| where TimeGenerated > ago(48h)
+| order by TimeGenerated desc
+| take 20

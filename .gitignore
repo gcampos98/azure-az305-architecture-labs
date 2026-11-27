@@ -1,4 +1,9 @@
 .env*
 *.backup
+*.kvbak
 *.pem
 *.pub
+*.tmp
+*.bak
+__pycache__/
+*.pyc
