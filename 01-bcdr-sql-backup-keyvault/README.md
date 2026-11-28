@@ -56,6 +56,7 @@ flowchart LR
 | Decisión | Elección | Alternativas | Motivo |
 | :--- | :--- | :--- | :--- |
 | Redundancia de Storage | `Standard_GZRS` | LRS, ZRS, RA-GZRS | Redundancia zonal en la primaria y copia regional. RA-GZRS agrega lectura secundaria a mayor costo |
+| Destino temporal de la restauración | Cuenta `Standard_LRS` aparte | Reutilizar la cuenta GZRS | Azure Backup rechaza GZRS (`UserErrorBCMRestoreStorageAccountTypeNotSupported`) y pide redundancia local o geográfica |
 | Failover de SQL | Failover Group con política `Manual` (*customer managed*) | Política `Automatic` (*Microsoft managed*) | Microsoft recomienda `Manual`: tú decides cuándo conmutar |
 | Resiliencia zonal de SQL | No incluida (`S0`) | Zone redundancy en un nivel que la admita | Es complementaria: cubre fallas de zona, no de región |
 | Protección de VM | Azure Backup | Azure Site Recovery | Backup recupera datos desde puntos en el tiempo; Site Recovery replica la VM para conmutar con menor RPO/RTO |
@@ -116,13 +117,13 @@ Salidas reales en [`evidence/EVIDENCIA-CONSOLIDADA.md`](./evidence/EVIDENCIA-CON
 | `06d-sql-failover-activity-log.txt` | Operaciones de failover | Parcial | Solo `Started` y `Accepted` de una operación |
 | `07-vm-restore-disks.txt` | Restauración de discos | Pendiente | |
 
-El tiempo del comando `set-primary` no es el RTO. Para medir RTO y RPO, ejecuta `failover` sin `SKIP_PROBE` (usa `sqlcmd`, incluido en Cloud Shell). `activity` consulta las últimas 6 horas y los eventos pueden tardar unos minutos en aparecer.
+El tiempo del comando `set-primary` no es el RTO. Para medir RTO y RPO, ejecuta `failover` sin `SKIP_PROBE` (usa `sqlcmd`; si en Cloud Shell no está en el `PATH`, el script lo busca en `/opt/mssql-tools18/bin`). `activity` consulta las últimas 6 horas y los eventos pueden tardar unos minutos en aparecer.
 
 Los scripts ocultan GUIDs, correos e IPv4. Revisa igualmente la evidencia antes de publicarla.
 
 ## Costos y limpieza
 
-- Generan consumo: la base `S0` y su réplica, Storage GZRS, la VM y su disco, Azure Backup, Log Analytics y, si lo activas, NAT Gateway.
+- Generan consumo: la base `S0` y su réplica, Storage GZRS y una cuenta LRS para restaurar, la VM y su disco, Azure Backup, Log Analytics y, si lo activas, NAT Gateway.
 - `03-cleanup.sh` solo informa éxito cuando comprueba que los grupos no existen, y purga los Key Vault del lab.
 - El *soft delete* de Azure Backup puede retener el vault y su grupo. En ese caso el script elimina los demás recursos, informa limpieza incompleta y debes repetirlo al vencer la retención.
 

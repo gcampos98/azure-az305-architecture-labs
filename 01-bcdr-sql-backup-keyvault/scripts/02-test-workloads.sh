@@ -50,6 +50,9 @@ test_keyvault() {
 
 # ---------- Failover SQL ----------
 setup_sql_client() {
+  # En Cloud Shell, sqlcmd puede estar instalado fuera del PATH
+  local tools="${MSSQL_BIN:-/opt/mssql-tools18/bin}"
+  if ! command -v sqlcmd >/dev/null && [[ -x "$tools/sqlcmd" ]]; then PATH="$PATH:$tools"; fi
   command -v sqlcmd >/dev/null || die "No se encontró sqlcmd. Usa SKIP_PROBE=true para omitir la medición."
   local ip par token
   ip="$(curl -fsS --max-time 10 https://api.ipify.org)" || die "No se pudo obtener la IP pública."
@@ -212,13 +215,18 @@ test_backup_status() {
 
 test_restore() {
   log "Restauración de discos en $RG_RESTORE"
-  local rp job
+  local rp job staging="stgaz305lrs$SUFFIX"
   rp="$(az backup recoverypoint list -g "$RG_PRI" -v "$RSV_NAME" -c "$VM_NAME" -i "$VM_NAME" \
     --backup-management-type AzureIaasVM --workload-type VM --query "[0].name" -o tsv)"
   [[ -n "$rp" && "$rp" != "None" ]] || die "Aún no hay puntos de recuperación."
   az group create -n "$RG_RESTORE" -l "$LOC_PRI" --tags lab=az305-01 suffix="$SUFFIX" -o none
+  # Azure Backup rechaza GZRS como destino temporal: se usa una cuenta LRS aparte
+  exists az storage account show -g "$RG_PRI" -n "$staging" ||
+    az storage account create -n "$staging" -g "$RG_PRI" -l "$LOC_PRI" \
+      --sku Standard_LRS --kind StorageV2 --min-tls-version TLS1_2 \
+      --https-only true --allow-blob-public-access false -o none
   job="$(az backup restore restore-disks -g "$RG_PRI" -v "$RSV_NAME" -c "$VM_NAME" -i "$VM_NAME" \
-    --rp-name "$rp" --storage-account "$STG_NAME" --storage-account-resource-group "$RG_PRI" \
+    --rp-name "$rp" --storage-account "$staging" --storage-account-resource-group "$RG_PRI" \
     --target-resource-group "$RG_RESTORE" --query name -o tsv)"
   wait_job "$job" 07-vm-restore-disks.txt
 }
