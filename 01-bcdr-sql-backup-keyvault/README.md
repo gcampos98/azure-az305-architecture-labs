@@ -1,6 +1,6 @@
 # Laboratorio 01: Continuidad Empresarial y Recuperación ante Desastres (BCDR)
 
-> **Estado:** Ejecutado parcialmente en Azure (2026-11-27). Pendiente: medir RTO/RPO de SQL, registrar el failback en el Activity Log y restaurar los discos de la VM.
+> **Estado:** Completado. Ejecutado en Azure desde Cloud Shell el 2026-11-28, con evidencia. Las pruebas fuera de alcance están en [Limitaciones](#limitaciones).
 > **Enfoque AZ-305:** continuidad del negocio, almacenamiento de datos y monitoreo.
 
 ## Arquitectura
@@ -70,12 +70,15 @@ Los objetivos son propuestas para el lab; ajústalos a tu escenario.
 
 | Componente | RPO objetivo | RTO objetivo | Medido | Fuente |
 | :--- | :--- | :--- | :--- | :--- |
-| SQL, failover planificado | 0 | < 1 min | No medido (`SKIP_PROBE=true`) | Bloque `01-sql-failover-status.txt` |
+| SQL, failover planificado | 0 | < 1 min | RPO 0; RTO observado 8 s | Bloque `01-sql-failover-status.txt` |
+| SQL, failback planificado | 0 | < 1 min | RPO 0; RTO observado 7 s | Bloque `01-sql-failover-status.txt` |
 | SQL, failover forzado | ~5 s | < 1 min | No se prueba | n/a |
 | Storage GZRS | A definir | A definir | No se prueba | n/a |
-| VM (Azure Backup) | 24 h (política diaria) | A definir | Respaldo: 56 min. Restauración pendiente | Bloques `03-backup-job-completed.txt` y `07-vm-restore-disks.txt` (solo discos) |
+| VM (Azure Backup) | 24 h (política diaria) | A definir | Respaldo: 26 min. Restauración de discos: 1 min 5 s | Bloques `03-backup-job-completed.txt` y `07-vm-restore-disks.txt` |
 
-El RTO observado incluye el intervalo de sondeo (~2 s más el tiempo de conexión).
+El RTO observado es la mayor brecha entre dos escrituras confirmadas e incluye el intervalo de sondeo (~2 s más el tiempo de conexión). La restauración de discos no equivale a recuperar la VM: no incluye crearla ni validarla.
+
+En el failover, la sonda registró errores después de la primera escritura en el nuevo primario y su última muestra fue un error (`15:14:26Z`). Por eso los 8 s no demuestran que la conexión quedara estable en ese momento: una aplicación necesita reintentos.
 
 ## Ejecución en Azure Cloud Shell (Bash)
 
@@ -94,6 +97,7 @@ cd 01-bcdr-sql-backup-keyvault
 
 > Cloud Shell cierra la sesión tras 20 minutos sin interacción. Si ocurre, vuelve a ejecutar el mismo comando.
 > Para un respaldo en curso usa `./scripts/02-test-workloads.sh backup-status`.
+> Sin subcomando se ejecutan todas las pruebas (salvo `restore`) y se reemplazan sus bloques de evidencia.
 
 | Variable | Uso |
 | :--- | :--- |
@@ -107,19 +111,28 @@ cd 01-bcdr-sql-backup-keyvault
 
 Salidas reales en [`evidence/EVIDENCIA-CONSOLIDADA.md`](./evidence/EVIDENCIA-CONSOLIDADA.md), un bloque por prueba.
 
-| Bloque | Contenido | Estado | Resultado registrado |
-| :--- | :--- | :--- | :--- |
-| `01-sql-failover-status.txt` | Failover, failback, RTO/RPO observados | Parcial | Comando `set-primary`: 55 s y 33 s. RTO/RPO sin medir |
-| `02-storage-gzrs-status.txt` | Regiones y SKU | Completo | GZRS: `centralus` y `eastus2` disponibles |
-| `03-backup-job-completed.txt` | Solo se escribe si el trabajo termina | Completo | `Completed` en 56 min |
-| `04-kv-secret-restored.txt` | Secreto en el vault secundario | Completo | Secreto habilitado en el destino |
-| `05-sql-metrics.txt` | Métricas de ambos servidores | Parcial | Disponibilidad 100 %; sin actividad de conexiones |
-| `06d-sql-failover-activity-log.txt` | Operaciones de failover | Parcial | Solo `Started` y `Accepted` de una operación |
-| `07-vm-restore-disks.txt` | Restauración de discos | Pendiente | |
+| Bloque | Contenido | Resultado registrado |
+| :--- | :--- | :--- |
+| `01-sql-failover-status.txt` | Failover, failback, RTO/RPO observados | `set-primary`: 34 s y 33 s. Escrituras confirmadas y presentes: 17/17 y 19/19 |
+| `02-storage-gzrs-status.txt` | Regiones y SKU | GZRS: `centralus` y `eastus2` disponibles |
+| `03-backup-job-completed.txt` | Respaldo bajo demanda | `Completed` en 26 min |
+| `04-kv-secret-restored.txt` | Secreto en el vault secundario | Secreto habilitado en el destino |
+| `05-sql-metrics.txt` | Métricas de ambos servidores | Disponibilidad 100 % (intervalos de 5 min); conexiones durante las pruebas y 1 error de sistema |
+| `06d-sql-failover-activity-log.txt` | Operaciones de failover | `Succeeded` en las operaciones de failover y failback |
+| `07-vm-restore-disks.txt` | Restauración de discos | `Completed` en 1 min 5 s |
 
 El tiempo del comando `set-primary` no es el RTO. Para medir RTO y RPO, ejecuta `failover` sin `SKIP_PROBE` (usa `sqlcmd`; si en Cloud Shell no está en el `PATH`, el script lo busca en `/opt/mssql-tools18/bin`). `activity` consulta las últimas 6 horas y los eventos pueden tardar unos minutos en aparecer.
 
 Los scripts ocultan GUIDs, correos e IPv4. Revisa igualmente la evidencia antes de publicarla.
+
+## Hallazgos de la ejecución
+
+| Hallazgo | Ajuste |
+| :--- | :--- |
+| Azure Backup rechazó la cuenta GZRS como destino temporal de la restauración | Los scripts crean una cuenta `Standard_LRS` |
+| `sqlcmd` estaba instalado, pero fuera del `PATH` de la sesión | El script lo busca en `/opt/mssql-tools18/bin` |
+| El Activity Log tarda unos minutos en registrar el resultado | Ejecutar `activity` después de las pruebas |
+| Las métricas de 5 minutos no muestran las interrupciones de segundos | El RTO se mide con la sonda de escrituras |
 
 ## Costos y limpieza
 

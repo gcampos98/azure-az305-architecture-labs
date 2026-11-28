@@ -12,7 +12,7 @@ Repositorio de laboratorios prácticos diseñados para validar decisiones de arq
 
 | # | Dominio AZ-305 | Laboratorio | Servicios Clave | Estado |
 | :--- | :--- | :--- | :--- | :--- |
-| **01** | Continuidad Empresarial (BCDR) | [`01-bcdr-sql-backup-keyvault`](./01-bcdr-sql-backup-keyvault) | Azure SQL Failover Groups, Storage GZRS, Azure Backup (RSV), Key Vault | Ejecutado parcialmente |
+| **01** | Continuidad Empresarial (BCDR) | [`01-bcdr-sql-backup-keyvault`](./01-bcdr-sql-backup-keyvault) | Azure SQL Failover Groups, Storage GZRS, Azure Backup (RSV), Key Vault | Completado |
 | **01B** | Continuidad Empresarial (BCDR) | [`01b-bcdr-asr-azure-backup`](./01b-bcdr-asr-azure-backup) | Azure Site Recovery, Azure Backup con retención a largo plazo, Storage GZRS | En validación |
 | **01C** | Continuidad Empresarial y Seguridad | [`01c-keyvault-backup-restore`](./01c-keyvault-backup-restore) | Azure Key Vault, RBAC, backup y restore entre regiones, Log Analytics | Completado |
 | **02** | Redes e Hibridez | [`02-networking-hybrid-privatelink`](./02-networking-hybrid-privatelink) | VNet Peering, Service Endpoints vs. Private Endpoints, Network Watcher | Planificado |
