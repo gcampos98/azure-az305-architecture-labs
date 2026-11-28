@@ -1,6 +1,6 @@
 # Laboratorio 01: Continuidad Empresarial y Recuperación ante Desastres (BCDR)
 
-> **Estado:** En revisión. Falta una corrida completa con los scripts actuales y su evidencia.
+> **Estado:** Ejecutado parcialmente en Azure (2026-11-27). Pendiente: medir RTO/RPO de SQL, registrar el failback en el Activity Log y restaurar los discos de la VM.
 > **Enfoque AZ-305:** continuidad del negocio, almacenamiento de datos y monitoreo.
 
 ## Arquitectura
@@ -69,10 +69,10 @@ Los objetivos son propuestas para el lab; ajústalos a tu escenario.
 
 | Componente | RPO objetivo | RTO objetivo | Medido | Fuente |
 | :--- | :--- | :--- | :--- | :--- |
-| SQL, failover planificado | 0 | < 1 min | Pendiente | `evidence/01-sql-failover-status.txt` |
+| SQL, failover planificado | 0 | < 1 min | No medido (`SKIP_PROBE=true`) | Bloque `01-sql-failover-status.txt` |
 | SQL, failover forzado | ~5 s | < 1 min | No se prueba | n/a |
 | Storage GZRS | A definir | A definir | No se prueba | n/a |
-| VM (Azure Backup) | 24 h (política diaria) | A definir | Pendiente | `evidence/07-vm-restore-disks.txt` (solo discos) |
+| VM (Azure Backup) | 24 h (política diaria) | A definir | Respaldo: 56 min. Restauración pendiente | Bloques `03-backup-job-completed.txt` y `07-vm-restore-disks.txt` (solo discos) |
 
 El RTO observado incluye el intervalo de sondeo (~2 s más el tiempo de conexión).
 
@@ -104,17 +104,21 @@ cd 01-bcdr-sql-backup-keyvault
 
 ## Evidencias
 
-| Archivo | Contenido | Estado |
-| :--- | :--- | :--- |
-| `01-sql-failover-status.txt` | Failover, failback, RTO/RPO observados | Regenerar |
-| `02-storage-gzrs-status.txt` | Regiones y SKU | Disponible |
-| `03-backup-job-completed.txt` | Solo se escribe si el trabajo termina | Regenerar (la versión anterior dice `InProgress`) |
-| `04-kv-secret-restored.txt` | Secreto en el vault secundario | Disponible |
-| `05-sql-metrics.txt` | Métricas de ambos servidores | Pendiente |
-| `06d-sql-failover-activity-log.txt` | Operaciones de failover | Regenerar |
-| `07-vm-restore-disks.txt` | Restauración de discos | Pendiente |
+Salidas reales en [`evidence/EVIDENCIA-CONSOLIDADA.md`](./evidence/EVIDENCIA-CONSOLIDADA.md), un bloque por prueba.
 
-Los scripts ocultan GUIDs, correos e IPv4. Revisa igualmente cada archivo antes de publicarlo.
+| Bloque | Contenido | Estado | Resultado registrado |
+| :--- | :--- | :--- | :--- |
+| `01-sql-failover-status.txt` | Failover, failback, RTO/RPO observados | Parcial | Comando `set-primary`: 55 s y 33 s. RTO/RPO sin medir |
+| `02-storage-gzrs-status.txt` | Regiones y SKU | Completo | GZRS: `centralus` y `eastus2` disponibles |
+| `03-backup-job-completed.txt` | Solo se escribe si el trabajo termina | Completo | `Completed` en 56 min |
+| `04-kv-secret-restored.txt` | Secreto en el vault secundario | Completo | Secreto habilitado en el destino |
+| `05-sql-metrics.txt` | Métricas de ambos servidores | Parcial | Disponibilidad 100 %; sin actividad de conexiones |
+| `06d-sql-failover-activity-log.txt` | Operaciones de failover | Parcial | Solo `Started` y `Accepted` de una operación |
+| `07-vm-restore-disks.txt` | Restauración de discos | Pendiente | |
+
+El tiempo del comando `set-primary` no es el RTO. Para medir RTO y RPO, ejecuta `failover` sin `SKIP_PROBE` (usa `sqlcmd`, incluido en Cloud Shell). `activity` consulta las últimas 6 horas y los eventos pueden tardar unos minutos en aparecer.
+
+Los scripts ocultan GUIDs, correos e IPv4. Revisa igualmente la evidencia antes de publicarla.
 
 ## Costos y limpieza
 

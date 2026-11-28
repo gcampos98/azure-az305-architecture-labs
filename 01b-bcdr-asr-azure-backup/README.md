@@ -129,7 +129,9 @@ cd 01b-bcdr-asr-azure-backup
 
 ## Resultados y evidencia
 
-| Archivo en `evidence/` | Qué prueba | Estado |
+Cada prueba agrega un bloque a `evidence/EVIDENCIA-CONSOLIDADA.md`, que se crea con la primera ejecución.
+
+| Bloque | Qué prueba | Estado |
 | :--- | :--- | :--- |
 | `01-asr-replication.txt` | Replicación lista, salud y RPO | Pendiente |
 | `02-test-failover.txt` | VM de prueba aislada con los datos; RPO y duración | Pendiente |

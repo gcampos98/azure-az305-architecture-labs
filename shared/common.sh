@@ -189,11 +189,9 @@ else:
 with open(out_path, "w", encoding="utf-8") as f:
     f.write(doc)
 PY
+  printf '\n--- Bloque consolidado [%s] en %s ---\n' "$tag" "$out"
+  sanitize <"$tmp"
   rm -f "$tmp"
-  printf '
---- Bloque consolidado [%s] en %s ---
-' "$tag" "$out"
-  sanitize <<<"$("$@" 2>/dev/null || true)"
 }
 
 # --- Ayudas para los scripts de limpieza -------------------------------------

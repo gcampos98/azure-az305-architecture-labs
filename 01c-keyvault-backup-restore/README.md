@@ -1,6 +1,6 @@
 # Laboratorio 01C: Respaldo y recuperación de secretos y claves en Azure Key Vault
 
-> **Estado:** En validación. Los scripts pasan ShellCheck y pruebas contra un Azure simulado; falta la corrida real y su evidencia.
+> **Estado:** Completado. Ejecutado en Azure desde Cloud Shell el 2026-11-27, con evidencia.
 > **Dominio AZ-305:** continuidad del negocio y seguridad de secretos.
 
 ## Escenario
@@ -12,7 +12,7 @@ Un equipo necesita una copia independiente de un secreto y una clave en otra reg
 | Restaurar de `eastus` a `westus2` | Funciona: misma suscripción y geografía |
 | Valor y clave restaurados | Mismo SHA-256; lo cifrado en origen se descifra en destino |
 | Cambiar el secreto en origen | El destino no cambia: no es replicación |
-| Restaurar en `westeurope` | Azure lo rechaza: otra geografía |
+| Restaurar en `brazilsouth` | Azure lo rechaza: otra geografía |
 
 ## Habilidades demostradas
 
@@ -29,8 +29,8 @@ flowchart LR
         KV1["Key Vault en eastus: secreto + clave"]
         KV2["Key Vault en westus2: copia restaurada"]
     end
-    subgraph EU["Geografía: Europa"]
-        KV3["Key Vault en westeurope: prueba negativa"]
+    subgraph BR["Geografía: Brasil"]
+        KV3["Key Vault en brazilsouth: prueba negativa"]
     end
     TMP["Archivo cifrado temporal (se elimina)"]
     LAW["Log Analytics: AZKVAuditLogs"]
@@ -87,17 +87,21 @@ La asignación de roles puede tardar en propagarse; los scripts reintentan.
 | :--- | :--- |
 | `LOC_PRI` | `eastus` |
 | `LOC_DR` | `westus2` (misma geografía que `LOC_PRI`) |
-| `LOC_FOREIGN` | `westeurope` (otra geografía) |
+| `LOC_FOREIGN` | `brazilsouth` (otra geografía) |
 | `RG_PREFIX` | `rg-az305-1c` |
 
 ## Resultados y evidencia
 
-| Archivo en `evidence/` | Qué prueba | Estado |
+Salidas reales en [`evidence/EVIDENCIA-CONSOLIDADA.md`](./evidence/EVIDENCIA-CONSOLIDADA.md), un bloque por prueba.
+
+| Bloque | Qué prueba | Resultado |
 | :--- | :--- | :--- |
-| `01-backup-restore.txt` | Respaldo y restauración entre regiones | Pendiente |
-| `02-verification.txt` | Versiones, SHA-256 y descifrado | Pendiente |
-| `03-independence.txt` | La copia no se sincroniza | Pendiente |
-| `04-cross-geography.txt` | Rechazo entre geografías, con el mensaje de Azure | Pendiente |
+| `01-backup-restore.txt` | Respaldo y restauración entre regiones | `eastus` → `westus2`: secreto y clave con 2 versiones cada uno |
+| `02-verification.txt` | Versiones, SHA-256 y descifrado | Mismo SHA-256; lo cifrado en origen se descifra en destino |
+| `03-independence.txt` | La copia no se sincroniza | 3 versiones en origen, 2 en destino |
+| `04-cross-geography.txt` | Rechazo entre geografías | Rechazado en `brazilsouth`; el secreto no quedó en el destino |
+
+**Cómo leer el rechazo:** Azure responde `Cannot decrypt backup blob`, un mensaje que no menciona la geografía. La conclusión se apoya en la regla documentada y en el control previo: una escritura en el vault de destino funcionó, lo que descarta un problema de permisos de escritura.
 
 Consultas KQL: [`queries/keyvault-audit.kql`](./queries/keyvault-audit.kql).
 

@@ -18,7 +18,7 @@ load_config() {
   : "${RG_PREFIX:=rg-az305-1c}"
   : "${LOC_PRI:=eastus}"
   : "${LOC_DR:=westus2}"          # Misma geografía de Azure (Estados Unidos)
-  : "${LOC_FOREIGN:=westeurope}"  # Otra geografía, solo para la prueba negativa
+  : "${LOC_FOREIGN:=brazilsouth}"  # Otra geografía, solo para la prueba negativa
   RG_PRI="$RG_PREFIX-pri"
   RG_DR="$RG_PREFIX-dr"
 }

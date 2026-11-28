@@ -280,7 +280,7 @@ detach_disk() {
 test_recover_file() {
   [[ -n "$RESTORE_JOB" ]] || die "Primero ejecuta: ./scripts/02-test.sh restore"
   job_done "$RESTORE_JOB" || die "La restauración aún no termina."
-  local disk name attached output
+  local disk name attached output remote
   disk="$(az disk list -g "$RG_RESTORE" -o tsv \
     --query "sort_by([?osType=='Linux'], &timeCreated)[-1].id")"
   [[ -n "$disk" && "$disk" != "None" ]] || die "No se encontró el disco restaurado en $RG_RESTORE."
@@ -293,23 +293,28 @@ test_recover_file() {
   fi
   ATTACHED_DISK="$name"
   trap detach_disk EXIT
-  output="$(run_in_vm "$RG_PRI" "$VM_NAME" "set -e
+  # Heredoc entre comillas: nada se expande en Cloud Shell; solo se antepone MARKER
+  remote="MARKER=$MARKER_PATH
+$(cat <<'REMOTE'
+set -e
 BASE=/dev/disk/azure/scsi1/lun5
-for i in \$(seq 1 30); do ls \${BASE}* >/dev/null 2>&1 && break; sleep 2; done
+for i in $(seq 1 30); do ls ${BASE}-part* >/dev/null 2>&1 && break; sleep 2; done
 mkdir -p /mnt/restore
-DEV=""
-for part in \$(ls \${BASE}-part* 2>/dev/null | sort); do
-  if mount -o ro,noload "\$part" /mnt/restore 2>/dev/null; then
-    if [ -e "/mnt/restore${MARKER_PATH}" ]; then DEV="\$part"; break; fi
-    umount /mnt/restore 2>/dev/null || true
-  fi
+DEV=
+for part in ${BASE}-part*; do
+  mount -o ro,noload "$part" /mnt/restore 2>/dev/null || continue
+  if [ -e "/mnt/restore$MARKER" ]; then DEV=$part; break; fi
+  umount /mnt/restore
 done
-[ -n "\$DEV" ] || { echo "No se encontró partición con ${MARKER_PATH}" >&2; exit 1; }
+[ -n "$DEV" ] || { echo "No se encontró una partición con $MARKER" >&2; exit 1; }
 trap 'umount /mnt/restore' EXIT
-mkdir -p ${MARKER_PATH%/*}
-cp -p /mnt/restore$MARKER_PATH $MARKER_PATH
+mkdir -p "$(dirname "$MARKER")"
+cp -p "/mnt/restore$MARKER" "$MARKER"
 sync
-cat $MARKER_PATH")"
+cat "$MARKER"
+REMOTE
+)"
+  output="$(run_in_vm "$RG_PRI" "$VM_NAME" "$remote")"
   detach_disk
   trap - EXIT
   if ! grep -qF "$(marker_value)" <<<"$output" || ! marker_in "$RG_PRI" "$VM_NAME"; then
